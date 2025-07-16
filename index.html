@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Split The Bill Wisely - Bill Splitting App</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>💰 Split The Bill Wisely</h1>
+            <p class="subtitle">Split bills easily and fairly</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Bill Creation Form -->
+            <div class="bill-form-section">
+                <h2>Create New Bill</h2>
+                <form id="billForm" class="bill-form">
+                    <div class="form-group">
+                        <label for="billTitle">Bill Title</label>
+                        <input type="text" id="billTitle" placeholder="e.g., Dinner at Restaurant" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="billAmount">Total Amount ($)</label>
+                        <input type="number" id="billAmount" placeholder="0.00" step="0.01" min="0" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="billDescription">Description (Optional)</label>
+                        <textarea id="billDescription" placeholder="Add notes about this bill..."></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Participants</label>
+                        <div class="participants-section">
+                            <div class="add-participant">
+                                <input type="text" id="participantName" placeholder="Enter participant name">
+                                <button type="button" id="addParticipantBtn">Add</button>
+                            </div>
+                            <div id="savedParticipants" class="saved-participants">
+                                <div class="saved-participants-header">
+                                    <small>Select from previous participants:</small>
+                                    <div class="select-actions">
+                                        <button type="button" id="selectAllBtn" class="select-action-btn">Select All</button>
+                                        <button type="button" id="clearAllBtn" class="select-action-btn">Clear All</button>
+                                    </div>
+                                </div>
+                                <div id="savedParticipantsList" class="saved-participants-checkboxes"></div>
+                            </div>
+                            <div id="participantsList" class="participants-list"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="splitMethod">Split Method</label>
+                        <select id="splitMethod">
+                            <option value="equal">Equal Split</option>
+                            <option value="custom">Custom Amounts</option>
+                            <option value="percentage">Percentage Split</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="paidBy">Who Paid the Bill?</label>
+                        <select id="paidBy">
+                            <option value="">Select who paid...</option>
+                        </select>
+                        <small class="form-help">The person who paid will receive money from others</small>
+                    </div>
+                    
+                    <div id="customSplitSection" class="custom-split-section hidden">
+                        <h3>Custom Split Details</h3>
+                        <div id="customSplitInputs"></div>
+                    </div>
+                    
+                    <button type="submit" class="create-bill-btn">Create Bill</button>
+                </form>
+            </div>
+
+            <!-- Bills List -->
+            <div class="bills-section">
+                <h2>Recent Bills</h2>
+                <div id="billsList" class="bills-list">
+                    <p class="no-bills">No bills created yet. Create your first bill above!</p>
+                </div>
+                
+                <!-- Total Owes Summary -->
+                <div id="totalOwesSection" class="total-owes-section hidden">
+                    <h3>💰 Total Money Owed</h3>
+                    <div id="totalOwesBreakdown" class="total-owes-breakdown"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bill Details Modal -->
+        <div id="billModal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="modalBillTitle"></h2>
+                    <button class="close-btn" id="closeModal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="bill-summary">
+                        <p><strong>Total Amount:</strong> $<span id="modalBillAmount"></span></p>
+                        <p><strong>Date:</strong> <span id="modalBillDate"></span></p>
+                        <p id="modalBillDescription"></p>
+                    </div>
+                    
+                    <div class="split-details">
+                        <h3>Split Breakdown</h3>
+                        <div id="modalSplitBreakdown"></div>
+                    </div>
+                    
+                    <div class="payment-tracking">
+                        <h3>Payment Status</h3>
+                        <div id="modalPaymentStatus"></div>
+                    </div>
+                    
+                    <div id="owesSection" class="owes-section hidden">
+                        <h3>Who Owes Whom</h3>
+                        <div id="modalOwesBreakdown"></div>
+                    </div>
+                    
+                    <div class="modal-actions">
+                        <button id="shareBtn" class="share-btn">Share Bill</button>
+                        <button id="settleBillBtn" class="settle-btn">Mark as Settled</button>
+                        <button id="deleteBillBtn" class="delete-btn">Delete Bill</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
