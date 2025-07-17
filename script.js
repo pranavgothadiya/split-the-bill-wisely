@@ -13,7 +13,7 @@ class BillSplitter {
         this.initializeEventListeners();
         this.loadBillsFromCloud();
         this.renderSavedParticipants();
-        
+
         // Auto-refresh every 10 seconds to get updates from other users
         setInterval(() => {
             this.loadBillsFromCloud();
@@ -23,23 +23,31 @@ class BillSplitter {
     async loadBillsFromCloud() {
         try {
             // Try to load from cloud storage
-            const response = await fetch(STORAGE_URL, {
+            const response = await fetch(`${STORAGE_URL}/latest`, {
                 method: 'GET',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'X-Master-Key': JSONBIN_API_KEY
                 }
             });
-            
+
             if (response.ok) {
                 const data = await response.json();
-                this.bills = data.bills || [];
+                console.log('Loaded data from JSONBin:', data);
+                // The actual data is in the 'record' property
+                if (data.record && data.record.bills) {
+                    this.bills = data.record.bills;
+                } else {
+                    // Initialize with empty array if no bills found
+                    this.bills = [];
+                }
                 this.renderBills();
                 this.renderTotalOwesBreakdown();
             } else {
+                console.error('Failed to load from cloud:', response.status, response.statusText);
                 throw new Error('Failed to load from cloud');
             }
         } catch (error) {
-            console.log('Using local storage as fallback');
+            console.log('Using local storage as fallback:', error);
             // Fallback to localStorage if cloud fails
             this.bills = JSON.parse(localStorage.getItem('splitwise-bills')) || [];
             this.renderBills();
@@ -53,18 +61,20 @@ class BillSplitter {
             const response = await fetch(STORAGE_URL, {
                 method: 'PUT',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'X-Master-Key': JSONBIN_API_KEY
                 },
                 body: JSON.stringify({
                     bills: this.bills,
                     lastUpdated: new Date().toISOString()
                 })
             });
-            
+
             if (!response.ok) {
+                console.error('Failed to save to cloud:', response.status, response.statusText);
                 throw new Error('Failed to save to cloud');
             }
-            
+
             console.log('Bills saved to cloud successfully');
         } catch (error) {
             console.error('Error saving to cloud:', error);
@@ -164,7 +174,7 @@ class BillSplitter {
     renderSavedParticipants() {
         const container = document.getElementById('savedParticipantsList');
         const section = document.getElementById('savedParticipants');
-        
+
         if (this.savedParticipants.length === 0) {
             section.style.display = 'none';
             return;
@@ -176,12 +186,12 @@ class BillSplitter {
         this.savedParticipants.forEach(name => {
             const checkboxItem = document.createElement('div');
             checkboxItem.className = 'participant-checkbox-item';
-            
+
             const isSelected = this.participants.includes(name);
             if (isSelected) {
                 checkboxItem.classList.add('selected');
             }
-            
+
             checkboxItem.innerHTML = `
                 <input type="checkbox" 
                        id="saved-${name}" 
@@ -189,7 +199,7 @@ class BillSplitter {
                        onchange="billSplitter.toggleSavedParticipant('${name}')">
                 <label for="saved-${name}">${name}</label>
             `;
-            
+
             container.appendChild(checkboxItem);
         });
     }
@@ -197,7 +207,7 @@ class BillSplitter {
     toggleSavedParticipant(name) {
         const checkbox = document.getElementById(`saved-${name}`);
         const checkboxItem = checkbox.closest('.participant-checkbox-item');
-        
+
         if (checkbox.checked) {
             if (!this.participants.includes(name)) {
                 this.participants.push(name);
@@ -207,7 +217,7 @@ class BillSplitter {
             this.participants = this.participants.filter(p => p !== name);
             checkboxItem.classList.remove('selected');
         }
-        
+
         this.renderParticipants();
         this.updateCustomSplitInputs();
     }
@@ -257,9 +267,9 @@ class BillSplitter {
     updatePaidByDropdown() {
         const paidBySelect = document.getElementById('paidBy');
         const currentValue = paidBySelect.value;
-        
+
         paidBySelect.innerHTML = '<option value="">Select who paid...</option>';
-        
+
         this.participants.forEach(name => {
             const option = document.createElement('option');
             option.value = name;
@@ -273,7 +283,7 @@ class BillSplitter {
 
     handleSplitMethodChange(method) {
         const customSection = document.getElementById('customSplitSection');
-        
+
         if (method === 'equal') {
             customSection.classList.add('hidden');
         } else {
@@ -285,7 +295,7 @@ class BillSplitter {
     updateCustomSplitInputs() {
         const container = document.getElementById('customSplitInputs');
         const method = document.getElementById('splitMethod').value;
-        
+
         container.innerHTML = '';
 
         if (method === 'custom' || method === 'percentage') {
@@ -349,7 +359,7 @@ class BillSplitter {
 
         // Add to local bills array
         this.bills.unshift(bill);
-        
+
         // Save to cloud and local storage
         await this.saveBillsToCloud();
         this.resetForm();
@@ -388,7 +398,7 @@ class BillSplitter {
 
     renderBills() {
         const container = document.getElementById('billsList');
-        
+
         if (this.bills.length === 0) {
             container.innerHTML = '<p class="no-bills">No bills created yet. Create your first bill above!</p>';
             return;
@@ -425,7 +435,7 @@ class BillSplitter {
 
     openBillModal(bill) {
         this.currentBill = bill;
-        
+
         document.getElementById('modalBillTitle').textContent = bill.title;
         document.getElementById('modalBillAmount').textContent = bill.amount.toFixed(2);
         document.getElementById('modalBillDate').textContent = new Date(bill.createdAt).toLocaleDateString();
@@ -477,7 +487,7 @@ class BillSplitter {
     renderOwesBreakdown(bill) {
         const owesSection = document.getElementById('owesSection');
         const container = document.getElementById('modalOwesBreakdown');
-        
+
         // Only show this section if someone paid the full bill
         if (!bill.paidBy) {
             owesSection.classList.add('hidden');
@@ -536,26 +546,26 @@ class BillSplitter {
         let shareText = `💰 ${bill.title}\n`;
         shareText += `Total: $${bill.amount.toFixed(2)}\n`;
         shareText += `Date: ${new Date(bill.createdAt).toLocaleDateString()}\n\n`;
-        
+
         if (bill.paidBy) {
             shareText += `💳 ${bill.paidBy} paid the full bill\n\n`;
             shareText += `Who owes whom:\n`;
-            
+
             Object.entries(bill.splits).forEach(([name, amount]) => {
                 if (name !== bill.paidBy && amount > 0) {
                     const status = bill.payments[name] ? '✅ Paid' : '❌ Pending';
                     shareText += `${name} owes ${bill.paidBy}: $${amount.toFixed(2)} ${status}\n`;
                 }
             });
-            
+
             const totalOwed = Object.entries(bill.splits)
                 .filter(([name]) => name !== bill.paidBy)
                 .reduce((sum, [, amount]) => sum + amount, 0);
-            
+
             const totalReceived = Object.entries(bill.splits)
                 .filter(([name]) => name !== bill.paidBy && bill.payments[name])
                 .reduce((sum, [, amount]) => sum + amount, 0);
-            
+
             shareText += `\n💰 ${bill.paidBy} should receive: $${totalReceived.toFixed(2)} / $${totalOwed.toFixed(2)}\n`;
         } else {
             shareText += `Split Breakdown:\n`;
@@ -586,7 +596,7 @@ class BillSplitter {
             Object.keys(this.currentBill.payments).forEach(name => {
                 this.currentBill.payments[name] = true;
             });
-            
+
             this.saveBills();
             this.renderBills();
             this.renderPaymentStatus(this.currentBill);
@@ -614,10 +624,10 @@ class BillSplitter {
     renderTotalOwesBreakdown() {
         const section = document.getElementById('totalOwesSection');
         const container = document.getElementById('totalOwesBreakdown');
-        
+
         // Calculate total amounts owed between all people across all unsettled bills
         const owesMap = new Map();
-        
+
         this.bills.forEach(bill => {
             if (!bill.settled && bill.paidBy) {
                 Object.entries(bill.splits).forEach(([name, amount]) => {
@@ -641,14 +651,14 @@ class BillSplitter {
 
         // Calculate net amounts (who owes whom overall)
         const netAmounts = new Map();
-        
+
         owesMap.forEach((amount, key) => {
             const [debtor, creditor] = key.split('->');
-            
+
             // Add to creditor's net (they should receive money)
             const creditorNet = netAmounts.get(creditor) || 0;
             netAmounts.set(creditor, creditorNet + amount);
-            
+
             // Subtract from debtor's net (they owe money)
             const debtorNet = netAmounts.get(debtor) || 0;
             netAmounts.set(debtor, debtorNet - amount);
@@ -656,13 +666,13 @@ class BillSplitter {
 
         // Sort by net amount (highest creditors first, then debtors)
         const sortedEntries = Array.from(netAmounts.entries())
-            .sort(([,a], [,b]) => b - a)
-            .filter(([,amount]) => Math.abs(amount) > 0.01); // Filter out tiny amounts
+            .sort(([, a], [, b]) => b - a)
+            .filter(([, amount]) => Math.abs(amount) > 0.01); // Filter out tiny amounts
 
         sortedEntries.forEach(([person, netAmount]) => {
             const item = document.createElement('div');
             const isCreditor = netAmount > 0;
-            
+
             item.className = `total-owe-item ${isCreditor ? 'positive' : 'negative'}`;
             item.innerHTML = `
                 <span><strong>${person}</strong> ${isCreditor ? 'should receive' : 'owes in total'}</span>
@@ -695,10 +705,10 @@ class BillSplitter {
     async saveBills() {
         // Save to local storage as backup
         localStorage.setItem('splitwise-bills', JSON.stringify(this.bills));
-        
+
         // Save to cloud for sharing with friends
         await this.saveBillsToCloud();
-        
+
         this.renderTotalOwesBreakdown();
     }
 }
