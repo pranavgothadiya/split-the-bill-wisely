@@ -14,7 +14,14 @@ console.log('JSONBin Configuration:', {
 class BillSplitter {
     constructor() {
         this.bills = [];
-        this.savedParticipants = JSON.parse(localStorage.getItem('splitwise-participants')) || [];
+
+        // Default participants list
+        const defaultParticipants = ["Pranav", "Ravi", "Basav", "Anand", "Venky", "Koushal", "Pradeep", "Kranthi"];
+
+        // Force reset saved participants to include all default participants
+        localStorage.setItem('splitwise-participants', JSON.stringify(defaultParticipants));
+        this.savedParticipants = defaultParticipants;
+
         this.participants = [];
         this.currentBill = null;
         this.initializeEventListeners();
