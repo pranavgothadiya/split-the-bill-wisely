@@ -4,6 +4,13 @@ const JSONBIN_BIN_ID = '6878be5c6063391d31af5aef';
 const JSONBIN_API_KEY = '$2a$10$t2S0Zj/KwPXgjNQPfyYy1uwpRC53ftqqCa.lkwdqOmrkeRE001kJ6';
 const STORAGE_URL = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
 
+// For debugging - log the configuration
+console.log('JSONBin Configuration:', {
+    binId: JSONBIN_BIN_ID,
+    apiKeyFirstChars: JSONBIN_API_KEY.substring(0, 10) + '...',
+    storageUrl: STORAGE_URL
+});
+
 class BillSplitter {
     constructor() {
         this.bills = [];
@@ -22,29 +29,44 @@ class BillSplitter {
 
     async loadBillsFromCloud() {
         try {
+            console.log('Attempting to load data from JSONBin...');
             // Try to load from cloud storage
             const response = await fetch(`${STORAGE_URL}/latest`, {
                 method: 'GET',
                 headers: {
-                    'X-Master-Key': JSONBIN_API_KEY
+                    'X-Master-Key': JSONBIN_API_KEY,
+                    'X-Bin-Meta': false // Don't include metadata in response
                 }
             });
+
+            console.log('JSONBin response status:', response.status);
 
             if (response.ok) {
                 const data = await response.json();
                 console.log('Loaded data from JSONBin:', data);
-                // The actual data is in the 'record' property
-                if (data.record && data.record.bills) {
+
+                // Check if data is directly an object with bills property
+                if (data && data.bills) {
+                    console.log('Found bills array directly in data');
+                    this.bills = data.bills;
+                }
+                // Check if data is in the record property (standard JSONBin format)
+                else if (data && data.record && data.record.bills) {
+                    console.log('Found bills array in data.record');
                     this.bills = data.record.bills;
-                } else {
+                }
+                else {
+                    console.log('No bills found in response, initializing empty array');
                     // Initialize with empty array if no bills found
                     this.bills = [];
                 }
                 this.renderBills();
                 this.renderTotalOwesBreakdown();
             } else {
+                const errorText = await response.text();
                 console.error('Failed to load from cloud:', response.status, response.statusText);
-                throw new Error('Failed to load from cloud');
+                console.error('Error details:', errorText);
+                throw new Error(`Failed to load from cloud: ${response.status} ${response.statusText}`);
             }
         } catch (error) {
             console.log('Using local storage as fallback:', error);
@@ -57,12 +79,15 @@ class BillSplitter {
 
     async saveBillsToCloud() {
         try {
+            console.log('Attempting to save data to JSONBin...');
+
             // Save to cloud storage
             const response = await fetch(STORAGE_URL, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-Master-Key': JSONBIN_API_KEY
+                    'X-Master-Key': JSONBIN_API_KEY,
+                    'X-Bin-Versioning': false // Don't create a new version each time
                 },
                 body: JSON.stringify({
                     bills: this.bills,
@@ -70,12 +95,17 @@ class BillSplitter {
                 })
             });
 
+            console.log('JSONBin save response status:', response.status);
+
             if (!response.ok) {
+                const errorText = await response.text();
                 console.error('Failed to save to cloud:', response.status, response.statusText);
-                throw new Error('Failed to save to cloud');
+                console.error('Error details:', errorText);
+                throw new Error(`Failed to save to cloud: ${response.status} ${response.statusText}`);
             }
 
-            console.log('Bills saved to cloud successfully');
+            const data = await response.json();
+            console.log('Bills saved to cloud successfully:', data);
         } catch (error) {
             console.error('Error saving to cloud:', error);
             // Still save locally as backup
