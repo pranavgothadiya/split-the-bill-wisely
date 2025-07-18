@@ -1,7 +1,7 @@
 // Working cloud storage for bill sharing using JSONBin.io
 // REAL working credentials - this will work immediately for bill sharing!
 const JSONBIN_BIN_ID = '6878be5c6063391d31af5aef';
-const JSONBIN_API_KEY = '$2a$10$HAysPo3WlxNky5xV4Jao4eiZaIcikFaesm6JdPCzYin/uxcSaXS3m'; // Replace this with your actual API key from JSONBin.io
+const JSONBIN_API_KEY = '$2a$10$IxWgQKxmYY3abAXhG0XHs./YFSUcventdZwua2SfkQCYpjkq0OqEm'; // Replace this with your actual API key from JSONBin.io
 const STORAGE_URL = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
 
 // For debugging - log the configuration
